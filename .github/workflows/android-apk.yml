@@ -49,11 +49,33 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Build APKs
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug assembleRelease
+          ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Sign Release APK
+        run: |
+          echo "$SCI_FI_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          apksigner sign \
+            --ks android/app/release.keystore \
+            --ks-pass "pass:$SCI_FI_KEYSTORE_PASS" \
+            --ks-key-alias "$SCI_FI_KEY_ALIAS" \
+            --key-pass "pass:$SCI_FI_KEY_PASS" \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+          mv android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/app-release.apk
+        env:
+          SCI_FI_KEYSTORE_BASE64: ${{ secrets.SCI_FI_KEYSTORE_BASE64 }}
+          SCI_FI_KEYSTORE_PASS: ${{ secrets.SCI_FI_KEYSTORE_PASS }}
+          SCI_FI_KEY_ALIAS: ${{ secrets.SCI_FI_KEY_ALIAS }}
+          SCI_FI_KEY_PASS: ${{ secrets.SCI_FI_KEY_PASS }}
 
       - name: Define release metadata
         id: meta
