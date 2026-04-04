@@ -73,8 +73,7 @@ jobs:
 
       - name: Zipalign Check
         run: |
-          cd $ANDROID_HOME/build-tools/*/
-          ./zipalign -c 4 $GITHUB_WORKSPACE/android/app/build/outputs/apk/release/app-release.apk || echo "zipalign: warning (non-blocking)"
+          $ANDROID_HOME/build-tools/*/zipalign -c 4 $GITHUB_WORKSPACE/android/app/build/outputs/apk/release/app-release.apk || echo "zipalign: warning (non-blocking)"
 
       - name: Define release metadata
         id: meta
