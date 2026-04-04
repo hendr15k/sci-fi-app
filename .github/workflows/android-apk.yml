@@ -13,12 +13,6 @@ concurrency:
   group: android-release-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
-  KEYSTORE_PASS: ${{ secrets.SCI_FI_KEYSTORE_PASS }}
-  KEY_ALIAS: ${{ secrets.SCI_FI_KEY_ALIAS }}
-  KEY_PASS: ${{ secrets.SCI_FI_KEY_PASS }}
-
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -55,38 +49,27 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Debug keystore
-        run: |
-          echo "KEYSTORE_BASE64 length: ${#KEYSTORE_BASE64}"
-          mkdir -p $RUNNER_TEMP
-          echo "$KEYSTORE_BASE64" | base64 -d > $RUNNER_TEMP/release.jks
-          ls -lh $RUNNER_TEMP/release.jks
-        env:
-          KEYSTORE_BASE64: ${{ secrets.SCI_FI_KEYSTORE_BASE64 }}
-
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Build Signed Release APK
+      - name: Decode Keystore
         run: |
           mkdir -p android/app
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.jks
+          echo "${{ secrets.SCI_FI_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
+          ls -lh android/app/release.jks
 
+      - name: Build Signed Release APK
+        run: |
           cd android
-
-          # Build with signing config inline
+          chmod +x gradlew
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$RUNNER_TEMP/release.jks \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASS \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASS
-        env:
-          KEYSTORE_BASE64: ${{ secrets.SCI_FI_KEYSTORE_BASE64 }}
-          KEYSTORE_PASS: ${{ secrets.SCI_FI_KEYSTORE_PASS }}
-          KEY_ALIAS: ${{ secrets.SCI_FI_KEY_ALIAS }}
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/release.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.SCI_FI_KEYSTORE_PASS }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.SCI_FI_KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.SCI_FI_KEY_PASS }}
 
       - name: Define release metadata
         id: meta
@@ -107,9 +90,9 @@ jobs:
           git push origin "refs/tags/$TAG" --force 2>/dev/null || true
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "Sci-Fi Empfehlungen Nightly" --notes "Auto-built and signed from latest commit" --prerelease
+            gh release edit "$TAG" --title "Sci-Fi Empfehlungen Nightly" --notes "Auto-built from latest commit" --prerelease
           else
-            gh release create "$TAG" --title "Sci-Fi Empfehlungen Nightly" --notes "Auto-built and signed from latest commit" --prerelease
+            gh release create "$TAG" --title "Sci-Fi Empfehlungen Nightly" --notes "Auto-built from latest commit" --prerelease
           fi
 
           gh release upload "$TAG" \
