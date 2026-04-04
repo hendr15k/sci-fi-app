@@ -53,7 +53,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Decode Keystore
         run: |
@@ -61,15 +61,20 @@ jobs:
           echo "${{ secrets.SCI_FI_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
           ls -lh android/app/release.jks
 
-      - name: Build Signed Release APK
+      - name: Build Release APK (Signed via Gradle Properties)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease \
+          ./gradlew assembleRelease --no-daemon \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/release.jks \
             -Pandroid.injected.signing.store.password=${{ secrets.SCI_FI_KEYSTORE_PASS }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.SCI_FI_KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.SCI_FI_KEY_PASS }}
+
+      - name: Zipalign Check
+        run: |
+          cd $ANDROID_HOME/build-tools/*/
+          ./zipalign -c 4 $GITHUB_WORKSPACE/android/app/build/outputs/apk/release/app-release.apk || echo "zipalign: warning (non-blocking)"
 
       - name: Define release metadata
         id: meta
@@ -96,6 +101,6 @@ jobs:
           fi
 
           gh release upload "$TAG" \
-            android/app/build/outputs/apk/debug/*.apk \
-            android/app/build/outputs/apk/release/*.apk \
+            android/app/build/outputs/apk/debug/app-debug.apk \
+            android/app/build/outputs/apk/release/app-release.apk \
             --clobber
