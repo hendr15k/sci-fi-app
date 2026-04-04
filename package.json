@@ -1,0 +1,15 @@
+{
+  "name": "sci-fi-app",
+  "version": "1.0.0",
+  "description": "Sci-Fi Buchempfehlungen für Hendrik — 143 Titel mit Covers, Reading Tracker, Export",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build needed — loading from GitHub Pages'",
+    "android:build": "npx cap copy android && npx cap sync android && cd android && ./gradlew assembleDebug assembleRelease"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "appId": "com.hendr15k.scifi",
+  "appName": "Sci-Fi Empfehlungen",
+  "webDir": "dist",
+  "server": {
+    "url": "https://hendr15k.github.io/sci-fi-empfehlungen/",
+    "cleartext": true
+  }
+}
